@@ -1,41 +1,39 @@
 pipeline {
-    agent any
-
-    environment {
-        IMAGE_NAME = "shaikm496/k8s-demo-app"
-        IMAGE_TAG  = "latest"
+  agent {
+    kubernetes {
+      yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: kaniko
+    image: gcr.io/kaniko-project/executor:latest
+    command:
+    - /busybox/cat
+    tty: true
+    volumeMounts:
+    - name: docker-config
+      mountPath: /kaniko/.docker
+  volumes:
+  - name: docker-config
+    secret:
+      secretName: dockerhub-secret
+"""
     }
+  }
 
-    stages {
-
-        stage('Build Docker Image') {
-            steps {
-                echo "Building Docker image"
-                sh 'docker build -t $IMAGE_NAME:$IMAGE_TAG app'
-            }
+  stages {
+    stage('Build & Push Image') {
+      steps {
+        container('kaniko') {
+          sh '''
+          /kaniko/executor \
+            --dockerfile=Dockerfile \
+            --context=git://github.com/shaikm496-alt/k8s-jenkins-cicd.git \
+            --destination=mastan404/k8s-jenkins-cicd:latest
+          '''
         }
-
-        stage('Push Docker Image') {
-            steps {
-                echo "Pushing Docker image to Docker Hub"
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-                    sh '''
-                      echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                      docker push $IMAGE_NAME:$IMAGE_TAG
-                    '''
-                }
-            }
-        }
-
-        stage('Deploy to Kubernetes') {
-            steps {
-                echo "Deploying to Kubernetes"
-                sh 'kubectl apply -f k8s.yaml'
-            }
-        }
+      }
     }
+  }
 }
