@@ -5,6 +5,7 @@ pipeline {
 apiVersion: v1
 kind: Pod
 spec:
+  serviceAccountName: jenkins
   containers:
   - name: kaniko
     image: gcr.io/kaniko-project/executor:latest
@@ -26,30 +27,30 @@ spec:
   }
 
   stages {
+
+    stage('Verify Docker Config') {
+      steps {
+        container('kaniko') {
+          sh '''
+            echo "Listing /kaniko/.docker"
+            ls -l /kaniko/.docker
+          '''
+        }
+      }
+    }
+
     stage('Build and Push Image') {
       steps {
         container('kaniko') {
           sh '''
             /kaniko/executor \
               --dockerfile=app/Dockerfile \
-              --context=dir://. \
+              --context=dir:///home/jenkins/agent/workspace/${JOB_NAME} \
               --destination=mastan404/apache-tulasi:latest \
               --verbosity=debug
           '''
         }
       }
     }
-    stage('Verify Docker Config') {
-      steps {
-        container('kaniko') {
-          sh '''
-              echo "Listing /kaniko/.docker"
-              ls -l /kaniko/.docker
-              echo "Printing config.json"
-              cat /kaniko/.docker/config.json
-            '''
-          }
-        }
-      }
   }
 }
