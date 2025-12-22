@@ -37,6 +37,7 @@ spec:
               --dockerfile=app/Dockerfile \
               --context=dir://. \
               --destination=mastan404/apache-tulasi:latest
+              --verbosity=debug
           '''
         }
       }
