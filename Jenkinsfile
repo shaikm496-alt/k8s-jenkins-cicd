@@ -27,10 +27,11 @@ spec:
       steps {
         container('kaniko') {
           sh '''
-          /kaniko/executor \
-            --context=app \
-            --dockerfile=app/Dockerfile \
-            --destination=mastan404/k8s-jenkins-cicd:latest
+            /kaniko/executor \
+              --context ${WORKSPACE}/app \
+              --dockerfile ${WORKSPACE}/app/Dockerfile \
+              --destination docker.io/mastan404/nginx-app:latest \
+              --skip-tls-verify
           '''
         }
       }
