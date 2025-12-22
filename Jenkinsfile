@@ -39,5 +39,17 @@ spec:
         }
       }
     }
+    stage('Verify Docker Config') {
+      steps {
+        container('kaniko') {
+          sh '''
+              echo "Listing /kaniko/.docker"
+              ls -l /kaniko/.docker
+              echo "Printing config.json"
+              cat /kaniko/.docker/config.json
+            '''
+          }
+        }
+      }
   }
 }
