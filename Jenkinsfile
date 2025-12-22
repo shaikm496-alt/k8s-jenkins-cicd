@@ -9,15 +9,15 @@ spec:
   - name: kaniko
     image: gcr.io/kaniko-project/executor:latest
     command:
-    - /busybox/cat
+      - /busybox/cat
     tty: true
     volumeMounts:
-    - name: docker-config
-      mountPath: /kaniko/.docker
+      - name: docker-config
+        mountPath: /kaniko/.docker
   volumes:
-  - name: docker-config
-    secret:
-      secretName: dockerhub-secret
+    - name: docker-config
+      secret:
+        secretName: dockerhub-secret
 """
     }
   }
@@ -28,9 +28,9 @@ spec:
         container('kaniko') {
           sh '''
             /kaniko/executor \
-            --dockerfile=Dockerfile \
-            --context=git://github.com/shaikm496-alt/k8s-jenkins-cicd.git \
-            --destination=mastan404/k8s-jenkins-cicd:latest
+              --context=git://github.com/shaikm496-alt/k8s-jenkins-cicd.git \
+              --dockerfile=Dockerfile \
+              --destination=mastan404/k8s-jenkins-cicd:latest
           '''
         }
       }
