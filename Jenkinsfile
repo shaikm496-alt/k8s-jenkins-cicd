@@ -28,9 +28,9 @@ spec:
         container('kaniko') {
           sh '''
             /kaniko/executor \
-              --dockerfile=Dockerfile \
-              --context=git://github.com/shaikm496-alt/k8s-jenkins-cicd.git \
-              --destination=mastan404/k8s-jenkins-cicd:latest
+            --dockerfile=Dockerfile \
+            --context=git://github.com/shaikm496-alt/k8s-jenkins-cicd.git \
+            --destination=mastan404/k8s-jenkins-cicd:latest
           '''
         }
       }
