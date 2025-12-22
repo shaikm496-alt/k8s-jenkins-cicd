@@ -23,13 +23,19 @@ spec:
   }
 
   stages {
-    stage('Build & Push Docker Image') {
+    stage('Debug') {
+      steps {
+        echo 'Jenkinsfile is executing stages'
+      }
+    }
+
+    stage('Build and Push Image') {
       steps {
         container('kaniko') {
           sh '''
             /kaniko/executor \
               --dockerfile=app/Dockerfile \
-              --context=git://github.com/shaikm496-alt/k8s-jenkins-cicd.git#refs/heads/main \
+              --context=dir://. \
               --destination=mastan404/apache-tulasi:latest
           '''
         }
