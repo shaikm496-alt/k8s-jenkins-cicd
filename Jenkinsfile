@@ -18,17 +18,14 @@ spec:
   - name: docker-config
     secret:
       secretName: dockerhub-secret
+      items:
+      - key: .dockerconfigjson
+        path: config.json
 """
     }
   }
 
   stages {
-    stage('Debug') {
-      steps {
-        echo 'Jenkinsfile is executing stages'
-      }
-    }
-
     stage('Build and Push Image') {
       steps {
         container('kaniko') {
@@ -36,7 +33,7 @@ spec:
             /kaniko/executor \
               --dockerfile=app/Dockerfile \
               --context=dir://. \
-              --destination=mastan404/apache-tulasi:latest
+              --destination=mastan404/apache-tulasi:latest \
               --verbosity=debug
           '''
         }
