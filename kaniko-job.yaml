@@ -1,23 +1,4 @@
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: kaniko-build
-spec:
-  backoffLimit: 0
-  template:
-    spec:
-      restartPolicy: Never
-      containers:
-      - name: kaniko
-        image: gcr.io/kaniko-project/executor:latest
-        args:
-          - "--dockerfile=Dockerfile"
-          - "--context=git://github.com/shaikm496-alt/k8s-jenkins-cicd.git"
-          - "--destination=mastan404/web-app:latest"
-        volumeMounts:
-        - name: docker-config
-          mountPath: /kaniko/.docker
-      volumes:
-      - name: docker-config
-        secret:
-          secretName: dockerhub-secret
+args:
+  - --dockerfile=Dockerfile
+  - --context=git://github.com/shaikm496-alt/k8s-jenkins-cicd.git
+  - --destination=mastan404/k8s-jenkins-demo:latest
