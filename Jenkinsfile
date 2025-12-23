@@ -1,46 +1,49 @@
 pipeline {
-    agent any
+  agent any
 
-    environment {
-        DOCKER_IMAGE = "mastan404/web-app:latest"
+  stages {
+
+    stage('Checkout Code') {
+      steps {
+        git branch: 'main',
+            url: 'https://github.com/shaikm496-alt/k8s-jenkins-cicd.git'
+      }
     }
 
-    stages {
-
-        stage('Checkout Code') {
-            steps {
-                git branch: 'main',
-                    url: 'https://github.com/shaikm496-alt/k8s-jenkins-cicd.git'
-            }
+    stage('Build & Push Image (Kaniko Job)') {
+      steps {
+        sshagent(credentials: ['master-ssh']) {
+          sh '''
+          ssh -o StrictHostKeyChecking=no mastan@localhost << EOF
+            kubectl get nodes
+            kubectl delete job kaniko-build --ignore-not-found=true
+            kubectl apply -f kaniko-job.yaml
+            kubectl wait --for=condition=complete job/kaniko-build --timeout=600s
+          EOF
+          '''
         }
-
-        stage('Build & Push Image (Kaniko Job)') {
-            steps {
-                sh '''
-                kubectl delete job kaniko-build --ignore-not-found=true
-
-                kubectl apply -f kaniko-job.yaml
-
-                kubectl wait --for=condition=complete job/kaniko-build --timeout=600s
-                '''
-            }
-        }
-
-        stage('Deploy to Kubernetes') {
-            steps {
-                sh '''
-                kubectl apply -f k8s.yaml
-                '''
-            }
-        }
+      }
     }
 
-    post {
-        success {
-            echo "✅ CI/CD Pipeline completed successfully"
+    stage('Deploy to Kubernetes') {
+      steps {
+        sshagent(credentials: ['master-ssh']) {
+          sh '''
+          ssh -o StrictHostKeyChecking=no mastan@localhost << EOF
+            kubectl apply -f k8s.yaml
+          EOF
+          '''
         }
-        failure {
-            echo "❌ Pipeline failed. Check logs."
-        }
+      }
     }
+  }
+
+  post {
+    success {
+      echo "✅ CI/CD Pipeline completed successfully"
+    }
+    failure {
+      echo "❌ Pipeline failed. Check logs."
+    }
+  }
 }
