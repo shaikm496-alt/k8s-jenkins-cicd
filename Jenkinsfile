@@ -1,25 +1,68 @@
 pipeline {
-  agent {
-    kubernetes {
-      yaml """
+    agent {
+        kubernetes {
+            defaultContainer 'kubectl'
+            yaml """
 apiVersion: v1
 kind: Pod
 spec:
   containers:
-  - name: test
-    image: busybox
-    command: ["sh", "-c", "sleep 30"]
-"""
-    }
-  }
+  - name: kubectl
+    image: bitnami/kubectl:latest
+    command:
+    - cat
+    tty: true
 
-  stages {
-    stage('Test') {
-      steps {
-        container('test') {
-          sh 'echo POD_STARTED && hostname'
+  - name: jnlp
+    image: jenkins/inbound-agent:latest
+"""
         }
-      }
     }
-  }
+
+    stages {
+
+        stage('Verify') {
+            steps {
+                sh '''
+                  echo "Running inside Kubernetes pod"
+                  whoami
+                  pwd
+                  ls -l
+                '''
+            }
+        }
+
+        stage('Delete old Kaniko job') {
+            steps {
+                sh '''
+                  kubectl delete job kaniko-build -n jenkins --ignore-not-found=true
+                '''
+            }
+        }
+
+        stage('Apply Kaniko job') {
+            steps {
+                sh '''
+                  kubectl apply -f kaniko-job.yaml -n jenkins
+                '''
+            }
+        }
+
+        stage('Wait for Kaniko') {
+            steps {
+                sh '''
+                  kubectl wait --for=condition=complete job/kaniko-build -n jenkins --timeout=600s
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Build & image creation successful"
+        }
+        failure {
+            echo "❌ Pipeline failed"
+        }
+    }
 }
