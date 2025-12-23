@@ -1,32 +1,38 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: jenkins-demo
+  name: web-app
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: jenkins-demo
+      app: web
   template:
     metadata:
       labels:
-        app: jenkins-demo
+        app: web
     spec:
       containers:
-      - name: app
-        image: YOUR_DOCKERHUB_USERNAME/k8s-jenkins-cicd:latest
+      - name: web
+        image: mastan404/web-app:latest
         ports:
-        - containerPort: 5000
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: jenkins-demo-service
+  name: web-service
 spec:
   type: NodePort
   selector:
-    app: jenkins-demo
+    app: web
   ports:
-  - port: 5000
-    targetPort: 5000
-    nodePort: 30009
+  - port: 80
+    nodePort: 30080
