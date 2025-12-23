@@ -1,47 +1,29 @@
 pipeline {
-  agent {
-    kubernetes {
-      label 'kaniko-agent'
-      yaml """
-apiVersion: v1
-kind: Pod
-spec:
-  containers:
-  - name: kaniko
-    image: gcr.io/kaniko-project/executor:latest
-    imagePullPolicy: Always
-    command:
-    - cat
-    tty: true
-    volumeMounts:
-    - name: docker-config
-      mountPath: /kaniko/.docker
-  volumes:
-  - name: docker-config
-    secret:
-      secretName: dockerhub-secret
-      items:
-      - key: .dockerconfigjson
-        path: config.json
-"""
-    }
-  }
+  agent any
 
   stages {
-    stage('Build & Push Docker Image') {
+    stage('Checkout') {
       steps {
-        container('kaniko') {
-          sh '''
-            echo "Starting Kaniko build..."
+        git branch: 'main',
+            url: 'https://github.com/mastan404/k8s-jenkins-cicd.git'
+      }
+    }
 
-            /kaniko/executor \
-              --context $WORKSPACE/app \
-              --dockerfile $WORKSPACE/app/Dockerfile \
-              --destination docker.io/mastan404/nginx-app:latest \
-              --skip-tls-verify \
-              --verbosity=info
-          '''
-        }
+    stage('Build Image') {
+      steps {
+        sh 'docker build -t mastan404/web-app:latest .'
+      }
+    }
+
+    stage('Push Image') {
+      steps {
+        sh 'docker push mastan404/web-app:latest'
+      }
+    }
+
+    stage('Deploy to K8s') {
+      steps {
+        sh 'kubectl apply -f k8s.yaml'
       }
     }
   }
