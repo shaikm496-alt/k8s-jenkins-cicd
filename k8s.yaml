@@ -1,38 +1,23 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: batch/v1
+kind: Job
 metadata:
-  name: web-app
+  name: kaniko-build
 spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: web
+  backoffLimit: 0
   template:
-    metadata:
-      labels:
-        app: web
     spec:
+      restartPolicy: Never
       containers:
-      - name: web
-        image: mastan404/web-app:latest
-        ports:
-        - containerPort: 80
-        resources:
-          requests:
-            cpu: "100m"
-            memory: "128Mi"
-          limits:
-            cpu: "200m"
-            memory: "256Mi"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: web-service
-spec:
-  type: NodePort
-  selector:
-    app: web
-  ports:
-  - port: 80
-    nodePort: 30080
+      - name: kaniko
+        image: gcr.io/kaniko-project/executor:latest
+        args:
+          - "--dockerfile=Dockerfile"
+          - "--context=git://github.com/shaikm496-alt/k8s-jenkins-cicd.git"
+          - "--destination=mastan404/web-app:latest"
+        volumeMounts:
+        - name: docker-config
+          mountPath: /kaniko/.docker
+      volumes:
+      - name: docker-config
+        secret:
+          secretName: dockerhub-secret
