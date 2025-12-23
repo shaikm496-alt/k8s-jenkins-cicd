@@ -1,14 +1,9 @@
 pipeline {
     agent any
 
-    environment {
-        KUBECTL = "kubectl"
-        KANIKO_JOB = "kaniko-build"
-    }
-
     stages {
 
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
                 checkout scm
             }
@@ -17,37 +12,25 @@ pipeline {
         stage('Verify Files') {
             steps {
                 sh '''
-                  echo "Workspace path:"
+                  echo "Workspace:"
                   pwd
-                  echo "Files in workspace:"
+                  echo "Files:"
                   ls -l
                 '''
             }
         }
 
-        stage('Delete Old Kaniko Job (if exists)') {
+        stage('Run Kaniko Job (from master kubectl)') {
             steps {
                 sh '''
-                  echo "Deleting old Kaniko job if exists..."
-                  ${KUBECTL} delete job ${KANIKO_JOB} --ignore-not-found=true
-                '''
-            }
-        }
+                  echo "Deleting old Kaniko job if exists"
+                  kubectl delete job kaniko-build --ignore-not-found=true
 
-        stage('Apply Kaniko Job') {
-            steps {
-                sh '''
-                  echo "Applying Kaniko job..."
-                  ${KUBECTL} apply -f kaniko-job.yaml
-                '''
-            }
-        }
+                  echo "Applying Kaniko job"
+                  kubectl apply -f kaniko-job.yaml
 
-        stage('Wait for Kaniko Build') {
-            steps {
-                sh '''
-                  echo "Waiting for Kaniko job to complete..."
-                  ${KUBECTL} wait --for=condition=complete job/${KANIKO_JOB} --timeout=600s
+                  echo "Waiting for Kaniko build to complete"
+                  kubectl wait --for=condition=complete job/kaniko-build --timeout=600s
                 '''
             }
         }
@@ -55,10 +38,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ Image build completed successfully"
+            echo "✅ Image build & push completed successfully"
         }
         failure {
-            echo "❌ Pipeline failed. Check logs above."
+            echo "❌ Pipeline failed. Check logs."
         }
     }
 }
