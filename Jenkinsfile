@@ -1,5 +1,20 @@
 pipeline {
-    agent any
+    agent {
+        kubernetes {
+            yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  serviceAccountName: jenkins
+  containers:
+  - name: kubectl
+    image: bitnami/kubectl:latest
+    command:
+    - cat
+    tty: true
+"""
+        }
+    }
 
     stages {
 
@@ -11,37 +26,34 @@ pipeline {
 
         stage('Verify Files') {
             steps {
-                sh '''
-                  echo "Workspace:"
-                  pwd
-                  echo "Files:"
-                  ls -l
-                '''
+                container('kubectl') {
+                    sh '''
+                      pwd
+                      ls -l
+                    '''
+                }
             }
         }
 
-        stage('Run Kaniko Job (from master kubectl)') {
+        stage('Run Kaniko Job') {
             steps {
-                sh '''
-                  echo "Deleting old Kaniko job if exists"
-                  kubectl delete job kaniko-build --ignore-not-found=true
-
-                  echo "Applying Kaniko job"
-                  kubectl apply -f kaniko-job.yaml
-
-                  echo "Waiting for Kaniko build to complete"
-                  kubectl wait --for=condition=complete job/kaniko-build --timeout=600s
-                '''
+                container('kubectl') {
+                    sh '''
+                      kubectl delete job kaniko-build --ignore-not-found=true
+                      kubectl apply -f kaniko-job.yaml
+                      kubectl wait --for=condition=complete job/kaniko-build --timeout=600s
+                    '''
+                }
             }
         }
     }
 
     post {
         success {
-            echo "✅ Image build & push completed successfully"
+            echo "✅ Kaniko image build & push successful"
         }
         failure {
-            echo "❌ Pipeline failed. Check logs."
+            echo "❌ Pipeline failed"
         }
     }
 }
