@@ -1,17 +1,26 @@
-agent {
-  kubernetes {
-    yaml """
+pipeline {
+  agent {
+    kubernetes {
+      label 'k8s-test'
+      defaultContainer 'jnlp'
+      yaml """
 apiVersion: v1
 kind: Pod
 spec:
-  serviceAccountName: jenkins
   containers:
-  - name: kubectl
-    image: bitnami/kubectl:latest
-    imagePullPolicy: Always
-    command:
-    - cat
-    tty: true
+  - name: jnlp
+    image: jenkins/inbound-agent:latest
 """
+    }
+  }
+
+  stages {
+    stage('Kubernetes Agent Test') {
+      steps {
+        echo '✅ Jenkins is running inside a Kubernetes pod'
+        sh 'uname -a'
+        sh 'echo Hello from Kubernetes Agent'
+      }
+    }
   }
 }
