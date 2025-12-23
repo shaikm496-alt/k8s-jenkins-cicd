@@ -14,15 +14,15 @@ pipeline {
             steps {
                 sshagent(credentials: ['mastan-ssh']) {
                     sh '''
-                    ssh -o StrictHostKeyChecking=no mastan@192.168.1.20 << 'EOF'
-                      echo "Deleting old Kaniko job (if exists)"
-                      kubectl delete job kaniko-build --ignore-not-found=true
+                    ssh -o StrictHostKeyChecking=no mastan@192.168.1.20 << EOF
+                    echo "Deleting old Kaniko job"
+                    kubectl delete job kaniko-build --ignore-not-found=true
 
-                      echo "Applying Kaniko job"
-                      kubectl apply -f kaniko-job.yaml
+                    echo "Applying Kaniko job"
+                    kubectl apply -f kaniko-job.yaml
 
-                      echo "Waiting for Kaniko job to complete"
-                      kubectl wait --for=condition=complete job/kaniko-build --timeout=600s
+                    echo "Waiting for Kaniko job"
+                    kubectl wait --for=condition=complete job/kaniko-build --timeout=600s
                     EOF
                     '''
                 }
@@ -33,4 +33,22 @@ pipeline {
             steps {
                 sshagent(credentials: ['mastan-ssh']) {
                     sh '''
-                    ssh -o StrictHostKeyChecking=no mastan@192.168.1
+                    ssh -o StrictHostKeyChecking=no mastan@192.168.1.20 << EOF
+                    echo "Deploying application"
+                    kubectl apply -f k8s.yaml
+                    EOF
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ CI/CD Pipeline completed successfully"
+        }
+        failure {
+            echo "❌ Pipeline failed. Check logs."
+        }
+    }
+}
