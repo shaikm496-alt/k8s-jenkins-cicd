@@ -1,54 +1,53 @@
 pipeline {
-    agent any
+  agent any
 
-    stages {
+  environment {
+    KUBECONFIG = "/var/jenkins_home/.kube/config"
+  }
 
-        stage('Checkout Code') {
-            steps {
-                git branch: 'main',
-                    url: 'https://github.com/shaikm496-alt/k8s-jenkins-cicd.git'
-            }
-        }
+  stages {
 
-        stage('Build & Push Image (Kaniko Job)') {
-            steps {
-                sshagent(credentials: ['mastan-ssh']) {
-                    sh '''
-                    ssh -o StrictHostKeyChecking=no mastan@192.168.1.20 << EOF
-                    echo "Deleting old Kaniko job"
-                    kubectl delete job kaniko-build --ignore-not-found=true
-
-                    echo "Applying Kaniko job"
-                    kubectl apply -f kaniko-job.yaml
-
-                    echo "Waiting for Kaniko job"
-                    kubectl wait --for=condition=complete job/kaniko-build --timeout=600s
-                    EOF
-                    '''
-                }
-            }
-        }
-
-        stage('Deploy to Kubernetes') {
-            steps {
-                sshagent(credentials: ['mastan-ssh']) {
-                    sh '''
-                    ssh -o StrictHostKeyChecking=no mastan@192.168.1.20 << EOF
-                    echo "Deploying application"
-                    kubectl apply -f k8s.yaml
-                    EOF
-                    '''
-                }
-            }
-        }
+    stage('Checkout Code') {
+      steps {
+        checkout scm
+      }
     }
 
-    post {
-        success {
-            echo "✅ CI/CD Pipeline completed successfully"
-        }
-        failure {
-            echo "❌ Pipeline failed. Check logs."
-        }
+    stage('Verify Files') {
+      steps {
+        sh '''
+          echo "Workspace path:"
+          pwd
+          echo "Files in workspace:"
+          ls -l
+        '''
+      }
     }
+
+    stage('Run Kaniko Job') {
+      steps {
+        sh '''
+          echo "Deleting old Kaniko job (if exists)..."
+          kubectl delete job kaniko-build --ignore-not-found=true
+
+          echo "Applying Kaniko job..."
+          kubectl apply -f kaniko-job.yaml
+
+          echo "Waiting for Kaniko job to complete..."
+          kubectl wait --for=condition=complete job/kaniko-build --timeout=600s
+
+          echo "Kaniko job completed successfully"
+        '''
+      }
+    }
+  }
+
+  post {
+    success {
+      echo "✅ CI/CD Pipeline completed successfully"
+    }
+    failure {
+      echo "❌ Pipeline failed. Check logs above."
+    }
+  }
 }
