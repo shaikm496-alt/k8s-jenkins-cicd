@@ -1,9 +1,19 @@
 pipeline {
-  agent any
-
-  environment {
-    IMAGE_NAME = "mastan404/k8s-jenkins-demo"
-    IMAGE_TAG  = "latest"
+  agent {
+    kubernetes {
+      yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  serviceAccountName: jenkins
+  containers:
+  - name: kubectl
+    image: bitnami/kubectl:latest
+    command:
+    - cat
+    tty: true
+"""
+    }
   }
 
   stages {
@@ -17,13 +27,14 @@ pipeline {
 
     stage('Build & Push Image (Kaniko)') {
       steps {
-        sh '''
-          kubectl delete job kaniko-build --ignore-not-found=true
-          kubectl apply -f kaniko-job.yaml
-          kubectl wait --for=condition=complete job/kaniko-build --timeout=600s
-        '''
+        container('kubectl') {
+          sh '''
+            kubectl delete job kaniko-build --ignore-not-found=true
+            kubectl apply -f kaniko-job.yaml
+            kubectl wait --for=condition=complete job/kaniko-build --timeout=600s
+          '''
+        }
       }
     }
-
   }
 }
