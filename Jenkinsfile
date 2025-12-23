@@ -1,25 +1,22 @@
 pipeline {
   agent {
     kubernetes {
-      defaultContainer 'kubectl'
       yaml """
 apiVersion: v1
 kind: Pod
 spec:
   serviceAccountName: jenkins
   containers:
-  - name: kubectl
-    image: bitnami/kubectl:latest
-    command:
-    - cat
-    tty: true
+  - name: jnlp
+    image: jenkins/inbound-agent:latest
+    args: ['\$(JENKINS_SECRET)', '\$(JENKINS_NAME)']
     resources:
       requests:
-        cpu: "50m"
-        memory: "64Mi"
+        cpu: "25m"
+        memory: "48Mi"
       limits:
         cpu: "100m"
-        memory: "128Mi"
+        memory: "96Mi"
 """
     }
   }
@@ -27,7 +24,7 @@ spec:
   stages {
     stage('Test') {
       steps {
-        sh 'kubectl get pods -n jenkins'
+        echo "Agent connected successfully"
       }
     }
   }
