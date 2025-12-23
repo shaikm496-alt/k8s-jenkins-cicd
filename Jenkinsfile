@@ -1,7 +1,6 @@
 pipeline {
   agent {
     kubernetes {
-      label 'simplefile'
       defaultContainer 'kubectl'
       yaml """
 apiVersion: v1
@@ -14,6 +13,13 @@ spec:
     command:
     - cat
     tty: true
+    resources:
+      requests:
+        cpu: "50m"
+        memory: "64Mi"
+      limits:
+        cpu: "100m"
+        memory: "128Mi"
 """
     }
   }
