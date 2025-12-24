@@ -1,25 +1,15 @@
 pipeline {
   agent {
     kubernetes {
-      label 'k8s-test'
-      defaultContainer 'jnlp'
-      yaml """
-apiVersion: v1
-kind: Pod
-spec:
-  containers:
-  - name: jnlp
-    image: jenkins/inbound-agent:latest
-"""
+      label 'kaniko'
     }
   }
-
   stages {
-    stage('Kubernetes Agent Test') {
+    stage('Build') {
       steps {
-        echo '✅ Jenkins is running inside a Kubernetes pod'
-        sh 'uname -a'
-        sh 'echo Hello from Kubernetes Agent'
+        container('kaniko') {
+          sh 'echo Hello from Kaniko'
+        }
       }
     }
   }
