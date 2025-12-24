@@ -2,37 +2,27 @@ pipeline {
   agent {
     kubernetes {
       label 'kaniko'
-      inheritFrom 'jnlp-agent'
       defaultContainer 'kaniko'
     }
   }
 
   environment {
-    IMAGE_NAME = "docker.io/mastan404/demo-app"
-    IMAGE_TAG  = "v1"
+    IMAGE_NAME = "mastan404/sample-app"
+    IMAGE_TAG  = "latest"
   }
 
   stages {
-
-    stage('Agent Check') {
+    stage('Build & Push Image') {
       steps {
-        sh '''
-          echo "Jenkins agent started"
-          uname -a
-          ls -la
-        '''
-      }
-    }
-
-    stage('Build & Push Image (Kaniko)') {
-      steps {
-        sh '''
-          /kaniko/executor \
-            --context $(pwd) \
-            --dockerfile Dockerfile \
-            --destination ${IMAGE_NAME}:${IMAGE_TAG} \
-            --verbosity info
-        '''
+        container('kaniko') {
+          sh '''
+            /kaniko/executor \
+              --context $WORKSPACE \
+              --dockerfile Dockerfile \
+              --destination ${IMAGE_NAME}:${IMAGE_TAG} \
+              --skip-tls-verify
+          '''
+        }
       }
     }
   }
