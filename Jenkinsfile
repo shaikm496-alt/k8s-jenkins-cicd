@@ -7,19 +7,18 @@ pipeline {
   }
 
   environment {
-    IMAGE_NAME = "mastan404/sample-app"
-    IMAGE_TAG  = "latest"
+    IMAGE = "mastan404/demo-app:latest"
   }
 
   stages {
-    stage('Build & Push Image') {
+    stage('Build & Push') {
       steps {
         container('kaniko') {
           sh '''
             /kaniko/executor \
               --context $WORKSPACE \
               --dockerfile Dockerfile \
-              --destination ${IMAGE_NAME}:${IMAGE_TAG} \
+              --destination $IMAGE \
               --skip-tls-verify
           '''
         }
